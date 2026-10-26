@@ -553,6 +553,8 @@
 
   <!-- JAVASCRIPT LOGIC -->
   <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxdmLOQJfEhaJ-hzev7Z5m2vykb53B9_WXiqXXJcF7VSudiJlIZ6-lrrW3q3tlSEMOp/exec";
+
     let submissionCounter = 1;
 
     function selectCombo(comboName) {
@@ -570,15 +572,27 @@
       const combo = document.getElementById('combo').value;
       const direccion = document.getElementById('direccion').value;
 
-      // Loading State
+      // Estado de carga
       btn.disabled = true;
       btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Guardando en Google Sheets...`;
 
-      setTimeout(() => {
+      // Preparar los datos del formulario
+      const formData = new FormData();
+      formData.append('nombre', nombre);
+      formData.append('correo', correo);
+      formData.append('combo', combo);
+      formData.append('direccion', direccion);
+
+      // Envío real a Google Sheets mediante fetch
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => {
         btn.disabled = false;
         btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Enviar Pedido a Google Sheets`;
 
-        // Hide form and show dynamic notification
+        // Ocultar formulario y mostrar notificación
         document.getElementById('orderForm').classList.add('hidden');
         
         const notif = document.getElementById('sheetsNotification');
@@ -590,17 +604,22 @@
         const now = new Date();
         const dateStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        tableBody.innerHTML = `
-          <tr class="text-emerald-300 border-b border-slate-800/50">
-            <td class="p-2">${dateStr}</td>
-            <td class="p-2">${nombre}</td>
-            <td class="p-2">${combo}</td>
-            <td class="p-2"><span class="bg-emerald-500/20 px-2 py-0.5 rounded text-[10px]">REGISTRADO</span></td>
+        const newRow = `
+          <tr class="border-b border-slate-800">
+            <td class="p-2 text-slate-400">${dateStr}</td>
+            <td class="p-2 font-bold text-white">${nombre}</td>
+            <td class="p-2 text-amber-400">${combo}</td>
+            <td class="p-2 text-emerald-400">Registrado</td>
           </tr>
         `;
-
+        tableBody.innerHTML = newRow + tableBody.innerHTML;
         submissionCounter++;
-      }, 1200);
+      })
+      .catch(error => {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Reintentar Envío`;
+        alert("Error al conectar con Google Sheets: " + error);
+      });
     }
 
     function resetForm() {
